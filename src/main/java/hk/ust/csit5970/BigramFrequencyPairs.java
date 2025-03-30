@@ -2,6 +2,7 @@ package hk.ust.csit5970;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Iterator;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -37,6 +38,8 @@ public class BigramFrequencyPairs extends Configured implements Tool {
 	/*
 	 * TODO: write your Mapper here.
 	 */
+	private static int margin = 0;
+	
 	private static class MyMapper extends
 			Mapper<LongWritable, Text, PairOfStrings, IntWritable> {
 
@@ -49,10 +52,23 @@ public class BigramFrequencyPairs extends Configured implements Tool {
 				throws IOException, InterruptedException {
 			String line = ((Text) value).toString();
 			String[] words = line.trim().split("\\s+");
-			
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+			if (words.length > 1)
+			{
+				String left = words[0];
+				for (int i = 1; i < words.length; i++) {
+					String right = words[i];
+					if (right.length() == 0) {
+						continue;
+					}
+					BIGRAM.set(left, right);
+					context.write(BIGRAM, ONE);
+					context.write(new PairOfStrings(left,""), ONE);
+					left = right;
+				}
+			}
 		}
 	}
 
@@ -71,6 +87,23 @@ public class BigramFrequencyPairs extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+			Iterator<IntWritable> iter = values.iterator();
+			int count = 0;
+			while (iter.hasNext()) 
+				count += iter.next().get();
+			// Get marginal counts
+			if(key.getRightElement().equals(""))
+			{
+				margin = count;
+				VALUE.set((float)margin);
+				context.write(key, VALUE);
+			}
+			// Calculate relative frequencies
+			else
+			{
+				VALUE.set((float)count / (float)margin);
+				context.write(key, VALUE);
+			}
 		}
 	}
 	
@@ -84,6 +117,12 @@ public class BigramFrequencyPairs extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+			Iterator<IntWritable> iter = values.iterator();
+			int sum = 0;
+			while (iter.hasNext())
+				sum += iter.next().get();
+			SUM.set(sum);
+			context.write(key, SUM);
 		}
 	}
 

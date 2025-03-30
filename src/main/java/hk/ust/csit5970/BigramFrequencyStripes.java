@@ -2,6 +2,7 @@ package hk.ust.csit5970;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.commons.cli.CommandLine;
@@ -54,6 +55,23 @@ public class BigramFrequencyStripes extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+			if (words.length > 1)
+			{
+				String left = words[0];
+				for (int i = 1; i < words.length; i++) {
+					String right = words[i];
+					if (right.length() == 0) {
+						continue;
+					}
+					STRIPE.increment(right);
+					STRIPE.increment("");
+					KEY.set(left);
+					context.write(KEY, STRIPE);
+					STRIPE.clear();
+
+					left = right;
+				}
+			}
 		}
 	}
 
@@ -75,6 +93,34 @@ public class BigramFrequencyStripes extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+			Iterator<HashMapStringIntWritable> iter = stripes.iterator();
+			while (iter.hasNext()) 
+				SUM_STRIPES.plus(iter.next());
+
+			int margin = SUM_STRIPES.containsKey("") ? SUM_STRIPES.get("") : 0;
+
+			for(Map.Entry<String, Integer> entry : SUM_STRIPES.entrySet())
+			{
+				String left = ((Text) key).toString();
+				String right = entry.getKey();
+				int value = entry.getValue();
+				// Get marginal counts
+				if(right.equals(""))
+				{
+					FREQ.set(margin);
+					BIGRAM.set(left, right);
+					context.write(BIGRAM, FREQ);
+				}
+				// Calculate relative frequencies
+				else
+				{
+					FREQ.set(value / (float)margin);
+					BIGRAM.set(left, right);
+					context.write(BIGRAM, FREQ);
+				}
+				
+			}
+			SUM_STRIPES.clear();
 		}
 	}
 
@@ -94,6 +140,11 @@ public class BigramFrequencyStripes extends Configured implements Tool {
 			/*
 			 * TODO: Your implementation goes here.
 			 */
+			Iterator<HashMapStringIntWritable> iter = stripes.iterator();
+			while (iter.hasNext()) 
+				SUM_STRIPES.plus(iter.next());
+			context.write(key,SUM_STRIPES);
+			SUM_STRIPES.clear();
 		}
 	}
 
