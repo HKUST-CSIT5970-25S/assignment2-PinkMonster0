@@ -24,7 +24,7 @@ docker run --hostname=quickstart.cloudera --privileged=true -d -it \
 -p 50075:50075 \
 -p 60010:60010 \
 -p 60030:60030 \
--v $LOCAL_DIR:/host \
+-v /home/ubuntu/assignment2-PinkMonster0:/host \
 --memory 4g \
 --name cloudera_quickstart \
 csit6000o/quickstart:latest \
